@@ -531,9 +531,9 @@ export default function App() {
   const [interventions,setInterventions]=useState(INITIAL_INTERVENTIONS);
   const [sidebarOpen,setSidebarOpen]=useState(true);
 
-  if(!user) return <Login onLogin={setUser}/>;
-
   const alertCount=useMemo(()=>{let n=0;contrats.forEach(c=>{if(expired(c.fin)||expSoon(c.fin))n++;});logements.forEach(l=>{if(expired(l.assurance)||expSoon(l.assurance))n++;});salaries.forEach(s=>{if(s.contrat==="CDD"&&s.finCDD&&(expired(s.finCDD)||expSoon(s.finCDD)))n++;if(s.typeCarte==="Carte de séjour"&&s.finCarte&&(expired(s.finCarte)||expSoon(s.finCarte,30)))n++;});return n;},[contrats,logements,salaries]);
+
+  if(!user) return <Login onLogin={setUser}/>;
   const cur=MENU.find(m=>m.id===page);
 
   return (
