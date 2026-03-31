@@ -231,7 +231,7 @@ function Salaries({salaries,setSalaries,chantiers,logements}) {
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-        <h2 style={{margin:0,fontSize:24,color:"#1a3c5e"}}>Salaries ({salaries.length})</h2>
+        <h2 style={{margin:0,fontSize:24,color:"#1a3c5e"}}>Salariés ({salaries.length})</h2>
         <Btn onClick={openNew}>+ Nouveau</Btn>
       </div>
       <input placeholder="Rechercher..." value={search} onChange={e=>setSearch(e.target.value)} style={{...iS,marginBottom:16}}/>
@@ -578,7 +578,7 @@ function Utilisateurs({users,setUsers,currentUser}) {
   );
 }
 
-const MENU=[{id:"dashboard",label:"Tableau de bord",icon:"📊"},{id:"presences",label:"Presences",icon:"✅"},{id:"salaries",label:"Salaries",icon:"👥"},{id:"chantiers",label:"Chantiers",icon:"🏗️"},{id:"logements",label:"Logements",icon:"🏠"},{id:"contrats",label:"Contrats",icon:"📄"},{id:"interventions",label:"Interventions",icon:"🧹"},{id:"rapports",label:"Rapports",icon:"📈"},{id:"utilisateurs",label:"Utilisateurs",icon:"🔑",adminOnly:true}];
+const MENU=[{id:"dashboard",label:"Tableau de bord",icon:"📊"},{id:"presences",label:"Presences",icon:"✅"},{id:"salaries",label:"Salariés",icon:"👥"},{id:"chantiers",label:"Chantiers",icon:"🏗️"},{id:"logements",label:"Logements",icon:"🏠"},{id:"contrats",label:"Contrats",icon:"📄"},{id:"interventions",label:"Interventions",icon:"🧹"},{id:"rapports",label:"Rapports",icon:"📈"},{id:"utilisateurs",label:"Utilisateurs",icon:"🔑",adminOnly:true}];
 
 export default function App() {
   const [user,setUser]=useState(null);
