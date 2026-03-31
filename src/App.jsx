@@ -520,6 +520,7 @@ function Rapports({salaries,presences,chantiers}) {
 
 const MENU=[{id:"dashboard",label:"Tableau de bord",icon:"📊"},{id:"presences",label:"Presences",icon:"✅"},{id:"salaries",label:"Salaries",icon:"👥"},{id:"chantiers",label:"Chantiers",icon:"🏗️"},{id:"logements",label:"Logements",icon:"🏠"},{id:"contrats",label:"Contrats",icon:"📄"},{id:"interventions",label:"Interventions",icon:"🧹"},{id:"rapports",label:"Rapports",icon:"📈"}];
 
+export default function App() {
   const [user,setUser]=useState(null);
   const [page,setPage]=useState("dashboard");
   const [salaries,setSalaries]=useState(INITIAL_SALARIES);
@@ -581,5 +582,3 @@ const MENU=[{id:"dashboard",label:"Tableau de bord",icon:"📊"},{id:"presences"
     </div>
   );
 }
-
-export default App;
