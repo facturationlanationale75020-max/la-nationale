@@ -72,11 +72,11 @@ const Modal = ({title,onClose,children}) => (
 );
 
 const USERS = [
-  { email: "admin@lanationale.fr", password: "Admin2024!", role: "Admin" },
-  { email: "manager@lanationale.fr", password: "Manager2024!", role: "Manager" },
+  { id: 1, email: "facturationlanationale75020@gmail.com", password: "Admin2024!", role: "Admin" },
+  { id: 2, email: "manager@lanationale.fr", password: "Manager2024!", role: "Manager" },
 ];
 
-function Login({ onLogin }) {
+function Login({ onLogin, users }) {
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [loading,setLoading]=useState(false);
@@ -84,7 +84,7 @@ function Login({ onLogin }) {
   const handleLogin = () => {
     setLoading(true); setError("");
     setTimeout(() => {
-      const user = USERS.find(u=>u.email===email&&u.password===password);
+      const user = users.find(u=>u.email===email&&u.password===password);
       if(user){onLogin(user);}else{setError("Email ou mot de passe incorrect");}
       setLoading(false);
     },800);
@@ -518,10 +518,71 @@ function Rapports({salaries,presences,chantiers}) {
   );
 }
 
-const MENU=[{id:"dashboard",label:"Tableau de bord",icon:"📊"},{id:"presences",label:"Presences",icon:"✅"},{id:"salaries",label:"Salaries",icon:"👥"},{id:"chantiers",label:"Chantiers",icon:"🏗️"},{id:"logements",label:"Logements",icon:"🏠"},{id:"contrats",label:"Contrats",icon:"📄"},{id:"interventions",label:"Interventions",icon:"🧹"},{id:"rapports",label:"Rapports",icon:"📈"}];
+function Utilisateurs({users,setUsers,currentUser}) {
+  const [modal,setModal]=useState(null);
+  const [form,setForm]=useState({email:"",password:"",role:"Manager"});
+  const [error,setError]=useState("");
+  const openNew=()=>{setForm({email:"",password:"",role:"Manager"});setError("");setModal("new");};
+  const openEdit=(u)=>{setForm({...u});setError("");setModal(u.id);};
+  const save=()=>{
+    if(!form.email||!form.password){setError("Email et mot de passe obligatoires.");return;}
+    const dup=users.find(u=>u.email===form.email&&u.id!==modal);
+    if(dup){setError("Cet email est deja utilise.");return;}
+    if(modal==="new"){
+      setUsers(prev=>[...prev,{...form,id:Date.now()}]);
+    } else {
+      setUsers(prev=>prev.map(u=>u.id===modal?{...form,id:modal}:u));
+    }
+    setModal(null);
+  };
+  const del=(u)=>{
+    if(u.id===currentUser.id){alert("Vous ne pouvez pas supprimer votre propre compte.");return;}
+    const admins=users.filter(x=>x.role==="Admin");
+    if(u.role==="Admin"&&admins.length<=1){alert("Impossible de supprimer le dernier compte Admin.");return;}
+    if(confirm("Supprimer le compte "+u.email+" ?"))setUsers(prev=>prev.filter(x=>x.id!==u.id));
+  };
+  return (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+        <h2 style={{margin:0,fontSize:24,color:"#1a3c5e"}}>Utilisateurs ({users.length})</h2>
+        <Btn onClick={openNew}>+ Nouveau</Btn>
+      </div>
+      <Card>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr style={{borderBottom:"2px solid #f3f4f6"}}>{["Email","Role","Mot de passe","Actions"].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:"#9ca3af",textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
+          <tbody>
+            {users.map(u=>(
+              <tr key={u.id} style={{borderBottom:"1px solid #f9fafb"}}>
+                <td style={{padding:"12px",fontWeight:600}}>{u.email}{u.id===currentUser.id&&<span style={{marginLeft:8,fontSize:10,color:"#9ca3af"}}>(vous)</span>}</td>
+                <td style={{padding:"12px"}}><Badge color={u.role==="Admin"?"#1a3c5e":"#8b5cf6"} bg={u.role==="Admin"?"#e8eef5":"#ede9fe"}>{u.role}</Badge></td>
+                <td style={{padding:"12px",fontSize:13,color:"#6b7280",fontFamily:"monospace"}}>{"•".repeat(u.password.length)}</td>
+                <td style={{padding:"12px"}}><div style={{display:"flex",gap:8}}><Btn small onClick={()=>openEdit(u)}>Modifier</Btn><Btn small variant="danger" onClick={()=>del(u)}>Supprimer</Btn></div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+      {modal&&(
+        <Modal title={modal==="new"?"Nouveau compte":"Modifier le compte"} onClose={()=>setModal(null)}>
+          <Inp label="Email" value={form.email} onChange={v=>setForm(f=>({...f,email:v}))} type="email"/>
+          <Inp label="Mot de passe" value={form.password} onChange={v=>setForm(f=>({...f,password:v}))} type="text"/>
+          <Inp label="Role" value={form.role} onChange={v=>setForm(f=>({...f,role:v}))} options={["Admin","Manager"]}/>
+          {error&&<div style={{background:"#fee2e2",color:"#ef4444",borderRadius:8,padding:"8px 12px",fontSize:12,marginBottom:12}}>{error}</div>}
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <Btn variant="ghost" onClick={()=>setModal(null)}>Annuler</Btn>
+            <Btn onClick={save}>Enregistrer</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+const MENU=[{id:"dashboard",label:"Tableau de bord",icon:"📊"},{id:"presences",label:"Presences",icon:"✅"},{id:"salaries",label:"Salaries",icon:"👥"},{id:"chantiers",label:"Chantiers",icon:"🏗️"},{id:"logements",label:"Logements",icon:"🏠"},{id:"contrats",label:"Contrats",icon:"📄"},{id:"interventions",label:"Interventions",icon:"🧹"},{id:"rapports",label:"Rapports",icon:"📈"},{id:"utilisateurs",label:"Utilisateurs",icon:"🔑",adminOnly:true}];
 
 export default function App() {
   const [user,setUser]=useState(null);
+  const [users,setUsers]=useState(USERS);
   const [page,setPage]=useState("dashboard");
   const [salaries,setSalaries]=useState(INITIAL_SALARIES);
   const [chantiers,setChantiers]=useState(INITIAL_CHANTIERS);
@@ -533,7 +594,7 @@ export default function App() {
 
   const alertCount=useMemo(()=>{let n=0;contrats.forEach(c=>{if(expired(c.fin)||expSoon(c.fin))n++;});logements.forEach(l=>{if(expired(l.assurance)||expSoon(l.assurance))n++;});salaries.forEach(s=>{if(s.contrat==="CDD"&&s.finCDD&&(expired(s.finCDD)||expSoon(s.finCDD)))n++;if(s.typeCarte==="Carte de séjour"&&s.finCarte&&(expired(s.finCarte)||expSoon(s.finCarte,30)))n++;});return n;},[contrats,logements,salaries]);
 
-  if(!user) return <Login onLogin={setUser}/>;
+  if(!user) return <Login onLogin={setUser} users={users}/>;
   const cur=MENU.find(m=>m.id===page);
 
   return (
@@ -544,7 +605,7 @@ export default function App() {
           {sidebarOpen&&<div><div style={{fontWeight:800,fontSize:15}}>La Nationale</div><div style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>Gestion multi-sites</div></div>}
         </div>
         <nav style={{flex:1,padding:"12px 10px",overflowY:"auto"}}>
-          {MENU.map(m=>{const active=page===m.id;return(
+          {MENU.filter(m=>!m.adminOnly||user.role==="Admin").map(m=>{const active=page===m.id;return(
             <button key={m.id} onClick={()=>setPage(m.id)} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 12px",borderRadius:10,marginBottom:2,background:active?"rgba(255,255,255,0.15)":"transparent",border:active?"1px solid rgba(255,255,255,0.2)":"1px solid transparent",color:active?"#fff":"rgba(255,255,255,0.65)",cursor:"pointer",textAlign:"left",fontSize:13,fontWeight:active?700:500,fontFamily:"inherit"}}>
               <span style={{fontSize:16,flexShrink:0}}>{m.icon}</span>
               {sidebarOpen&&<span>{m.label}</span>}
@@ -577,6 +638,7 @@ export default function App() {
           {page==="contrats"&&<Contrats contrats={contrats} setContrats={setContrats} chantiers={chantiers}/>}
           {page==="interventions"&&<Interventions interventions={interventions} setInterventions={setInterventions} chantiers={chantiers}/>}
           {page==="rapports"&&<Rapports salaries={salaries} presences={presences} chantiers={chantiers}/>}
+          {page==="utilisateurs"&&user.role==="Admin"&&<Utilisateurs users={users} setUsers={setUsers} currentUser={user}/>}
         </div>
       </main>
     </div>
