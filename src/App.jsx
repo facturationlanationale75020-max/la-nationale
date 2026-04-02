@@ -25,10 +25,10 @@ const INITIAL_CONTRATS = [
   { id: 5, chantierId: 5, client: "Clinique Saint-Louis", debut: "2023-03-01", fin: "2025-02-28", montant: 5500, statut: "Expire" },
 ];
 const INITIAL_LOGEMENTS = [
-  { id: 1, adresse: "3 Impasse des Lilas, 75020 Paris", occupants: [1,2], loyer: 1200, assurance: "2026-03-15", etat: "Bon" },
-  { id: 2, adresse: "17 Rue Voltaire, 75011 Paris", occupants: [3,4], loyer: 980, assurance: "2025-06-01", etat: "Moyen" },
-  { id: 3, adresse: "5 Allee des Roses, 69003 Lyon", occupants: [5,6], loyer: 850, assurance: "2026-09-30", etat: "Bon" },
-  { id: 4, adresse: "12 Rue du Soleil, 34000 Montpellier", occupants: [7,8], loyer: 760, assurance: "2025-04-10", etat: "Bon" },
+  { id: 1, adresse: "3 Impasse des Lilas, 75020 Paris", occupants: [1,2], loyer: 1200, assurance: "2026-03-15", etat: "Bon", jourEcheance: 5, dernierPaiement: "" },
+  { id: 2, adresse: "17 Rue Voltaire, 75011 Paris", occupants: [3,4], loyer: 980, assurance: "2025-06-01", etat: "Moyen", jourEcheance: 1, dernierPaiement: "" },
+  { id: 3, adresse: "5 Allee des Roses, 69003 Lyon", occupants: [5,6], loyer: 850, assurance: "2026-09-30", etat: "Bon", jourEcheance: 10, dernierPaiement: "" },
+  { id: 4, adresse: "12 Rue du Soleil, 34000 Montpellier", occupants: [7,8], loyer: 760, assurance: "2025-04-10", etat: "Bon", jourEcheance: 1, dernierPaiement: "" },
 ];
 const today = new Date().toISOString().split("T")[0];
 const INITIAL_PRESENCES = INITIAL_SALARIES.map(s => ({ salaryId: s.id, date: today, statut: "Present" }));
@@ -130,7 +130,13 @@ function Dashboard({salaries,chantiers,presences,interventions,contrats,logement
   const cA=chantiers.filter(c=>c.actif).length;
   const alerts=[];
   contrats.forEach(c=>{if(expired(c.fin))alerts.push({type:"danger",msg:"Contrat expire : "+c.client});else if(expSoon(c.fin))alerts.push({type:"warning",msg:"Contrat bientot expire : "+c.client});});
-  logements.forEach(l=>{if(expired(l.assurance))alerts.push({type:"danger",msg:"Assurance expiree : "+l.adresse});else if(expSoon(l.assurance))alerts.push({type:"warning",msg:"Assurance bientot expiree"});});
+  logements.forEach(l=>{
+    if(expired(l.assurance))alerts.push({type:"danger",msg:"Assurance expiree : "+l.adresse});
+    else if(expSoon(l.assurance))alerts.push({type:"warning",msg:"Assurance bientot expiree : "+l.adresse});
+    const moisCourant=new Date().toISOString().slice(0,7);
+    const dejaPaye=l.dernierPaiement&&l.dernierPaiement.startsWith(moisCourant);
+    if(!dejaPaye&&new Date().getDate()>=(l.jourEcheance||1))alerts.push({type:"danger",msg:"Loyer a payer : "+l.adresse+" ("+l.loyer+"€)"});
+  });
   salaries.forEach(s=>{
     const n=s.prenom+" "+s.nom;
     if(s.contrat==="CDD"&&s.finCDD){if(expired(s.finCDD))alerts.push({type:"danger",msg:"CDD expire : "+n});else if(expSoon(s.finCDD))alerts.push({type:"warning",msg:"CDD bientot expire : "+n});}
@@ -341,10 +347,20 @@ function Chantiers({chantiers,setChantiers,salaries}) {
 
 function Logements({logements,setLogements,salaries}) {
   const [modal,setModal]=useState(null);
-  const [form,setForm]=useState({adresse:"",loyer:"",assurance:"",etat:"Bon"});
-  const openNew=()=>{setForm({adresse:"",loyer:"",assurance:"",etat:"Bon"});setModal("new");};
+  const [form,setForm]=useState({adresse:"",loyer:"",assurance:"",etat:"Bon",jourEcheance:1,dernierPaiement:""});
+  const openNew=()=>{setForm({adresse:"",loyer:"",assurance:"",etat:"Bon",jourEcheance:1,dernierPaiement:""});setModal("new");};
   const openEdit=(l)=>{setForm({...l});setModal(l.id);};
-  const save=()=>{if(modal==="new")setLogements(prev=>[...prev,{...form,id:Date.now(),occupants:[],loyer:Number(form.loyer)}]);else setLogements(prev=>prev.map(l=>l.id===modal?{...form,id:modal,loyer:Number(form.loyer)}:l));setModal(null);};
+  const save=()=>{if(modal==="new")setLogements(prev=>[...prev,{...form,id:Date.now(),occupants:[],loyer:Number(form.loyer),jourEcheance:Number(form.jourEcheance)}]);else setLogements(prev=>prev.map(l=>l.id===modal?{...form,id:modal,loyer:Number(form.loyer),jourEcheance:Number(form.jourEcheance)}:l));setModal(null);};
+  const marquerPaye=(id)=>setLogements(prev=>prev.map(l=>l.id===id?{...l,dernierPaiement:today}:l));
+  const loyerStatut=(l)=>{
+    const now=new Date();
+    const moisCourant=now.toISOString().slice(0,7);
+    const dejaPaye=l.dernierPaiement&&l.dernierPaiement.startsWith(moisCourant);
+    if(dejaPaye) return "paye";
+    if(now.getDate()>=(l.jourEcheance||1)) return "retard";
+    return "attente";
+  };
+  const statutStyle={paye:{color:"#10b981",bg:"#d1fae5",label:"✅ Payé ce mois"},retard:{color:"#ef4444",bg:"#fee2e2",label:"🔴 À payer !"},attente:{color:"#f59e0b",bg:"#fef3c7",label:"🕐 Pas encore dû"}};
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -355,13 +371,22 @@ function Logements({logements,setLogements,salaries}) {
         {logements.map(l=>{
           const occ=salaries.filter(s=>l.occupants?.includes(s.id));
           const aA=expired(l.assurance)?"danger":expSoon(l.assurance)?"warning":"ok";
+          const lS=loyerStatut(l);
+          const lSt=statutStyle[lS];
           return(
-            <Card key={l.id} style={{borderLeft:"4px solid "+(aA==="danger"?"#ef4444":aA==="warning"?"#f59e0b":"#10b981")}}>
-              <div style={{fontWeight:700,fontSize:15,marginBottom:6}}>🏠 {l.adresse}</div>
-              <div style={{fontSize:13,color:"#6b7280",marginBottom:4}}>💶 {l.loyer} euro/mois</div>
-              <div style={{fontSize:13,color:aA==="danger"?"#ef4444":aA==="warning"?"#f59e0b":"#10b981",marginBottom:4}}>🛡️ Assurance : {fmtDate(l.assurance)} {aA!=="ok"?(aA==="danger"?"⚠️ EXPIREE":"⚠️ Bientot"):"✅"}</div>
+            <Card key={l.id} style={{borderLeft:"4px solid "+(lS==="retard"?"#ef4444":aA==="danger"?"#ef4444":aA==="warning"?"#f59e0b":"#10b981")}}>
+              <div style={{fontWeight:700,fontSize:15,marginBottom:8}}>🏠 {l.adresse}</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,padding:"8px 12px",borderRadius:8,background:lSt.bg}}>
+                <div>
+                  <div style={{fontSize:11,fontWeight:700,color:"#6b7280",marginBottom:2}}>LOYER MENSUEL</div>
+                  <div style={{fontSize:15,fontWeight:800,color:"#1a3c5e"}}>{l.loyer?.toLocaleString()} €<span style={{fontSize:11,fontWeight:400,color:"#6b7280"}}> — échéance le {l.jourEcheance||1}</span></div>
+                  <div style={{fontSize:12,fontWeight:700,color:lSt.color,marginTop:2}}>{lSt.label}{l.dernierPaiement&&<span style={{fontWeight:400,color:"#9ca3af"}}> (dernier : {fmtDate(l.dernierPaiement)})</span>}</div>
+                </div>
+                {lS!=="paye"&&<Btn small variant="success" onClick={()=>marquerPaye(l.id)}>Marquer payé</Btn>}
+              </div>
+              <div style={{fontSize:13,color:aA==="danger"?"#ef4444":aA==="warning"?"#f59e0b":"#10b981",marginBottom:4}}>🛡️ Assurance : {fmtDate(l.assurance)} {aA!=="ok"?(aA==="danger"?"⚠️ EXPIRÉE":"⚠️ Bientôt"):"✅"}</div>
               <div style={{fontSize:13,color:"#6b7280",marginBottom:4}}>Etat : {l.etat}</div>
-              <div style={{fontSize:12,color:"#374151",marginBottom:14}}>👥 {occ.length>0?occ.map(s=>s.prenom+" "+s.nom).join(", "):"Inoccupe"}</div>
+              <div style={{fontSize:12,color:"#374151",marginBottom:14}}>👥 {occ.length>0?occ.map(s=>s.prenom+" "+s.nom).join(", "):"Inoccupé"}</div>
               <Btn small variant="ghost" onClick={()=>openEdit(l)}>✏️ Modifier</Btn>
             </Card>
           );
@@ -370,7 +395,8 @@ function Logements({logements,setLogements,salaries}) {
       {modal&&(
         <Modal title={modal==="new"?"Nouveau logement":"Modifier logement"} onClose={()=>setModal(null)}>
           <Inp label="Adresse" value={form.adresse} onChange={v=>setForm({...form,adresse:v})}/>
-          <Inp label="Loyer (euro)" type="number" value={form.loyer} onChange={v=>setForm({...form,loyer:v})}/>
+          <Inp label="Loyer (€)" type="number" value={form.loyer} onChange={v=>setForm({...form,loyer:v})}/>
+          <Inp label="Jour d'échéance du loyer (1-31)" type="number" value={form.jourEcheance} onChange={v=>setForm({...form,jourEcheance:v})}/>
           <Inp label="Expiration assurance" type="date" value={form.assurance} onChange={v=>setForm({...form,assurance:v})}/>
           <Inp label="Etat" value={form.etat} onChange={v=>setForm({...form,etat:v})} options={["Bon","Moyen","Mauvais"]}/>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
