@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from './supabase';
 
 const INITIAL_SALARIES = [
   { id: 1, nom: "Dupont", prenom: "Marie", dob: "1988-03-12", contrat: "CDI", finCDD: "", typeCarte: "Carte nationale", finCarte: "", chantierId: 1, logementId: 1, actif: true },
@@ -186,7 +187,7 @@ function Presences({salaries,chantiers,presences,setPresences}) {
   const [filterCh,setFilterCh]=useState("Tous");
   const dp=presences.filter(p=>p.date===selDate);
   const getSt=(id)=>{const p=dp.find(p=>p.salaryId===id);return p?.statut||"Present";};
-  const setSt=(id,st)=>setPresences(prev=>{const ex=prev.find(p=>p.salaryId===id&&p.date===selDate);if(ex)return prev.map(p=>p.salaryId===id&&p.date===selDate?{...p,statut:st}:p);return[...prev,{salaryId:id,date:selDate,statut:st}];});
+  const setSt=async(id,st)=>{setPresences(prev=>{const ex=prev.find(p=>p.salaryId===id&&p.date===selDate);if(ex)return prev.map(p=>p.salaryId===id&&p.date===selDate?{...p,statut:st}:p);return[...prev,{salaryId:id,date:selDate,statut:st}];});await supabase.from('presences').upsert({salaryId:id,date:selDate,statut:st});};
   const fil=salaries.filter(s=>{const m=(s.prenom+" "+s.nom).toLowerCase().includes(search.toLowerCase());const ch=chantiers.find(c=>c.id===s.chantierId);const mc=filterCh==="Tous"||ch?.client===filterCh;return m&&mc;});
   const stats=["Present","Absent","Conge","Maladie"].map(s=>({label:s,count:fil.filter(sal=>getSt(sal.id)===s).length}));
   return (
@@ -232,8 +233,8 @@ function Salaries({salaries,setSalaries,chantiers,logements}) {
   const fil=salaries.filter(s=>(s.prenom+" "+s.nom).toLowerCase().includes(search.toLowerCase()));
   const openNew=()=>{setForm({nom:"",prenom:"",dob:"",contrat:"CDI",finCDD:"",typeCarte:"Carte nationale",finCarte:"",chantierId:1,logementId:1});setModal("new");};
   const openEdit=(s)=>{setForm({...s});setModal(s.id);};
-  const save=()=>{if(modal==="new")setSalaries(prev=>[...prev,{...form,id:Date.now(),actif:true,chantierId:Number(form.chantierId),logementId:Number(form.logementId)}]);else setSalaries(prev=>prev.map(s=>s.id===modal?{...form,id:modal,actif:true,chantierId:Number(form.chantierId),logementId:Number(form.logementId)}:s));setModal(null);};
-  const del=(id)=>{if(confirm("Supprimer ?"))setSalaries(prev=>prev.filter(s=>s.id!==id));};
+  const save=async()=>{const r=modal==="new"?{...form,id:Date.now(),actif:true,chantierId:Number(form.chantierId),logementId:Number(form.logementId)}:{...form,id:modal,actif:true,chantierId:Number(form.chantierId),logementId:Number(form.logementId)};if(modal==="new")setSalaries(prev=>[...prev,r]);else setSalaries(prev=>prev.map(s=>s.id===modal?r:s));await supabase.from('salaries').upsert(r);setModal(null);};
+  const del=async(id)=>{if(confirm("Supprimer ?")){setSalaries(prev=>prev.filter(s=>s.id!==id));await supabase.from('salaries').delete().eq('id',id);}};
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -304,8 +305,9 @@ function Chantiers({chantiers,setChantiers,salaries}) {
   const [form,setForm]=useState({client:"",adresse:"",frequence:"Journalier",actif:true});
   const openNew=()=>{setForm({client:"",adresse:"",frequence:"Journalier",actif:true});setModal("new");};
   const openEdit=(c)=>{setForm({...c});setModal(c.id);};
-  const save=()=>{if(modal==="new")setChantiers(prev=>[...prev,{...form,id:Date.now()}]);else setChantiers(prev=>prev.map(c=>c.id===modal?{...form,id:modal}:c));setModal(null);};
-  const del=(id)=>{if(confirm("Supprimer ?"))setChantiers(prev=>prev.filter(c=>c.id!==id));};
+  const save=async()=>{const r=modal==="new"?{...form,id:Date.now()}:{...form,id:modal};if(modal==="new")setChantiers(prev=>[...prev,r]);else setChantiers(prev=>prev.map(c=>c.id===modal?r:c));await supabase.from('chantiers').upsert(r);setModal(null);};
+  const del=async(id)=>{if(confirm("Supprimer ?")){setChantiers(prev=>prev.filter(c=>c.id!==id));await supabase.from('chantiers').delete().eq('id',id);}};
+  const toggleActif=async(id)=>{setChantiers(prev=>prev.map(c=>c.id===id?{...c,actif:!c.actif}:c));const ch=chantiers.find(c=>c.id===id);await supabase.from('chantiers').update({actif:!ch.actif}).eq('id',id);};
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -324,7 +326,7 @@ function Chantiers({chantiers,setChantiers,salaries}) {
             <div style={{fontSize:12,color:"#374151",marginBottom:14}}>👥 {aff.length} salarie(s) : {aff.map(s=>s.prenom+" "+s.nom).join(", ")||"Aucun"}</div>
             <div style={{display:"flex",gap:8}}>
               <Btn small variant="ghost" onClick={()=>openEdit(c)}>✏️ Modifier</Btn>
-              <Btn small variant={c.actif?"warning":"success"} onClick={()=>setChantiers(prev=>prev.map(x=>x.id===c.id?{...x,actif:!x.actif}:x))}>{c.actif?"Desactiver":"Activer"}</Btn>
+              <Btn small variant={c.actif?"warning":"success"} onClick={()=>toggleActif(c.id)}>{c.actif?"Desactiver":"Activer"}</Btn>
               <Btn small variant="danger" onClick={()=>del(c.id)}>🗑️</Btn>
             </div>
           </Card>
@@ -350,8 +352,8 @@ function Logements({logements,setLogements,salaries}) {
   const [form,setForm]=useState({adresse:"",loyer:"",assurance:"",etat:"Bon",jourEcheance:1,dernierPaiement:""});
   const openNew=()=>{setForm({adresse:"",loyer:"",assurance:"",etat:"Bon",jourEcheance:1,dernierPaiement:""});setModal("new");};
   const openEdit=(l)=>{setForm({...l});setModal(l.id);};
-  const save=()=>{if(modal==="new")setLogements(prev=>[...prev,{...form,id:Date.now(),occupants:[],loyer:Number(form.loyer),jourEcheance:Number(form.jourEcheance)}]);else setLogements(prev=>prev.map(l=>l.id===modal?{...form,id:modal,loyer:Number(form.loyer),jourEcheance:Number(form.jourEcheance)}:l));setModal(null);};
-  const marquerPaye=(id)=>setLogements(prev=>prev.map(l=>l.id===id?{...l,dernierPaiement:today}:l));
+  const save=async()=>{const r=modal==="new"?{...form,id:Date.now(),occupants:[],loyer:Number(form.loyer),jourEcheance:Number(form.jourEcheance)}:{...form,id:modal,loyer:Number(form.loyer),jourEcheance:Number(form.jourEcheance)};if(modal==="new")setLogements(prev=>[...prev,r]);else setLogements(prev=>prev.map(l=>l.id===modal?r:l));await supabase.from('logements').upsert(r);setModal(null);};
+  const marquerPaye=async(id)=>{setLogements(prev=>prev.map(l=>l.id===id?{...l,dernierPaiement:today}:l));await supabase.from('logements').update({dernierPaiement:today}).eq('id',id);};
   const loyerStatut=(l)=>{
     const now=new Date();
     const moisCourant=now.toISOString().slice(0,7);
@@ -414,7 +416,7 @@ function Contrats({contrats,setContrats,chantiers}) {
   const [form,setForm]=useState({client:"",chantierId:"",debut:"",fin:"",montant:"",statut:"Actif"});
   const openNew=()=>{setForm({client:"",chantierId:"",debut:"",fin:"",montant:"",statut:"Actif"});setModal("new");};
   const openEdit=(c)=>{setForm({...c});setModal(c.id);};
-  const save=()=>{if(modal==="new")setContrats(prev=>[...prev,{...form,id:Date.now(),montant:Number(form.montant),chantierId:Number(form.chantierId)}]);else setContrats(prev=>prev.map(c=>c.id===modal?{...form,id:modal,montant:Number(form.montant)}:c));setModal(null);};
+  const save=async()=>{const r=modal==="new"?{...form,id:Date.now(),montant:Number(form.montant),chantierId:Number(form.chantierId)}:{...form,id:modal,montant:Number(form.montant),chantierId:Number(form.chantierId)};if(modal==="new")setContrats(prev=>[...prev,r]);else setContrats(prev=>prev.map(c=>c.id===modal?r:c));await supabase.from('contrats').upsert(r);setModal(null);};
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -462,8 +464,8 @@ function Interventions({interventions,setInterventions,chantiers}) {
   const [form,setForm]=useState({chantierId:1,type:"Reguliere",date:today,heure:"08:00",fait:false,note:""});
   const [filter,setFilter]=useState("Toutes");
   const openNew=()=>{setForm({chantierId:1,type:"Reguliere",date:today,heure:"08:00",fait:false,note:""});setModal("new");};
-  const save=()=>{if(modal==="new")setInterventions(prev=>[...prev,{...form,id:Date.now(),chantierId:Number(form.chantierId)}]);else setInterventions(prev=>prev.map(i=>i.id===modal?{...form,id:modal}:i));setModal(null);};
-  const toggle=(id)=>setInterventions(prev=>prev.map(i=>i.id===id?{...i,fait:!i.fait}:i));
+  const save=async()=>{const r=modal==="new"?{...form,id:Date.now(),chantierId:Number(form.chantierId)}:{...form,id:modal,chantierId:Number(form.chantierId)};if(modal==="new")setInterventions(prev=>[...prev,r]);else setInterventions(prev=>prev.map(i=>i.id===modal?r:i));await supabase.from('interventions').upsert(r);setModal(null);};
+  const toggle=async(id)=>{const iv=interventions.find(i=>i.id===id);setInterventions(prev=>prev.map(i=>i.id===id?{...i,fait:!i.fait}:i));await supabase.from('interventions').update({fait:!iv.fait}).eq('id',id);};
   const fil=interventions.filter(i=>filter==="Toutes"||i.type===filter);
   return (
     <div>
@@ -550,22 +552,20 @@ function Utilisateurs({users,setUsers,currentUser}) {
   const [error,setError]=useState("");
   const openNew=()=>{setForm({email:"",password:"",role:"Manager"});setError("");setModal("new");};
   const openEdit=(u)=>{setForm({...u});setError("");setModal(u.id);};
-  const save=()=>{
+  const save=async()=>{
     if(!form.email||!form.password){setError("Email et mot de passe obligatoires.");return;}
     const dup=users.find(u=>u.email===form.email&&u.id!==modal);
     if(dup){setError("Cet email est deja utilise.");return;}
-    if(modal==="new"){
-      setUsers(prev=>[...prev,{...form,id:Date.now()}]);
-    } else {
-      setUsers(prev=>prev.map(u=>u.id===modal?{...form,id:modal}:u));
-    }
+    const r=modal==="new"?{...form,id:Date.now()}:{...form,id:modal};
+    if(modal==="new"){setUsers(prev=>[...prev,r]);}else{setUsers(prev=>prev.map(u=>u.id===modal?r:u));}
+    await supabase.from('app_users').upsert(r);
     setModal(null);
   };
-  const del=(u)=>{
+  const del=async(u)=>{
     if(u.id===currentUser.id){alert("Vous ne pouvez pas supprimer votre propre compte.");return;}
     const admins=users.filter(x=>x.role==="Admin");
     if(u.role==="Admin"&&admins.length<=1){alert("Impossible de supprimer le dernier compte Admin.");return;}
-    if(confirm("Supprimer le compte "+u.email+" ?"))setUsers(prev=>prev.filter(x=>x.id!==u.id));
+    if(confirm("Supprimer le compte "+u.email+" ?")){setUsers(prev=>prev.filter(x=>x.id!==u.id));await supabase.from('app_users').delete().eq('id',u.id);}
   };
   return (
     <div>
@@ -617,9 +617,35 @@ export default function App() {
   const [presences,setPresences]=useState(INITIAL_PRESENCES);
   const [interventions,setInterventions]=useState(INITIAL_INTERVENTIONS);
   const [sidebarOpen,setSidebarOpen]=useState(true);
+  const [loading,setLoading]=useState(true);
+
+  useEffect(()=>{
+    const init=async()=>{
+      setLoading(true);
+      const [s,ch,co,lo,pr,iv,us]=await Promise.all([
+        supabase.from('salaries').select('*'),
+        supabase.from('chantiers').select('*'),
+        supabase.from('contrats').select('*'),
+        supabase.from('logements').select('*'),
+        supabase.from('presences').select('*'),
+        supabase.from('interventions').select('*'),
+        supabase.from('app_users').select('*'),
+      ]);
+      if(s.data?.length) setSalaries(s.data); else await supabase.from('salaries').insert(INITIAL_SALARIES);
+      if(ch.data?.length) setChantiers(ch.data); else await supabase.from('chantiers').insert(INITIAL_CHANTIERS);
+      if(co.data?.length) setContrats(co.data); else await supabase.from('contrats').insert(INITIAL_CONTRATS);
+      if(lo.data?.length) setLogements(lo.data); else await supabase.from('logements').insert(INITIAL_LOGEMENTS);
+      if(pr.data?.length) setPresences(pr.data); else await supabase.from('presences').insert(INITIAL_SALARIES.map(s=>({salaryId:s.id,date:today,statut:"Present"})));
+      if(iv.data?.length) setInterventions(iv.data); else await supabase.from('interventions').insert(INITIAL_INTERVENTIONS);
+      if(us.data?.length) setUsers(us.data); else await supabase.from('app_users').insert(USERS);
+      setLoading(false);
+    };
+    init();
+  },[]);
 
   const alertCount=useMemo(()=>{let n=0;contrats.forEach(c=>{if(expired(c.fin)||expSoon(c.fin))n++;});logements.forEach(l=>{if(expired(l.assurance)||expSoon(l.assurance))n++;});salaries.forEach(s=>{if(s.contrat==="CDD"&&s.finCDD&&(expired(s.finCDD)||expSoon(s.finCDD)))n++;if(s.typeCarte==="Carte de séjour"&&s.finCarte&&(expired(s.finCarte)||expSoon(s.finCarte,30)))n++;});return n;},[contrats,logements,salaries]);
 
+  if(loading) return <div style={{minHeight:"100vh",background:"#1a3c5e",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{fontSize:48}}>🧹</div><div style={{color:"#fff",fontSize:18,fontWeight:700}}>La Nationale</div><div style={{color:"rgba(255,255,255,0.6)",fontSize:14}}>Chargement des données...</div></div>;
   if(!user) return <Login onLogin={setUser} users={users}/>;
   const cur=MENU.find(m=>m.id===page);
 
