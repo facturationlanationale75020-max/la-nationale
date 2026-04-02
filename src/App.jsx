@@ -72,8 +72,8 @@ const Modal = ({title,onClose,children}) => (
 );
 
 const USERS = [
-  { id: 1, email: "facturationlanationale75020@gmail.com", password: "Admin2024!", role: "Admin" },
-  { id: 2, email: "manager@lanationale.fr", password: "Manager2024!", role: "Manager" },
+  { id: 1, email: "facturationlanationale75020@gmail.com", password: "Totozozo95280!", role: "Admin" },
+  { id: 2, email: "lanationale75020@gmail.com", password: "Cristal1975@", role: "Manager" },
 ];
 
 function Login({ onLogin, users }) {
