@@ -23,7 +23,7 @@ const INITIAL_CONTRATS = [
   { id: 2, chantierId: 2, client: "Immeuble Haussmann", debut: "2024-06-01", fin: "2025-05-31", montant: 1800, statut: "Actif" },
   { id: 3, chantierId: 3, client: "Lycee Jean Moulin", debut: "2023-09-01", fin: "2026-06-30", montant: 2600, statut: "Actif" },
   { id: 4, chantierId: 4, client: "Centre Commercial Odysseum", debut: "2025-01-15", fin: "2025-12-15", montant: 4100, statut: "Actif" },
-  { id: 5, chantierId: 5, client: "Clinique Saint-Louis", debut: "2023-03-01", fin: "2025-02-28", montant: 5500, statut: "Expire" },
+  { id: 5, chantierId: 5, client: "Clinique Saint-Louis", debut: "2023-03-01", fin: "2025-02-28", montant: 5500, statut: "Expiré" },
 ];
 const INITIAL_LOGEMENTS = [
   { id: 1, adresse: "3 Impasse des Lilas, 75020 Paris", occupants: [1,2], loyer: 1200, assurance: "2026-03-15", etat: "Bon", jourEcheance: 5, dernierPaiement: "" },
@@ -32,17 +32,17 @@ const INITIAL_LOGEMENTS = [
   { id: 4, adresse: "12 Rue du Soleil, 34000 Montpellier", occupants: [7,8], loyer: 760, assurance: "2025-04-10", etat: "Bon", jourEcheance: 1, dernierPaiement: "" },
 ];
 const today = new Date().toISOString().split("T")[0];
-const INITIAL_PRESENCES = INITIAL_SALARIES.map(s => ({ salaryId: s.id, date: today, statut: "Present" }));
+const INITIAL_PRESENCES = INITIAL_SALARIES.map(s => ({ salaryId: s.id, date: today, statut: "Présent" }));
 const INITIAL_INTERVENTIONS = [
-  { id: 1, chantierId: 1, type: "Reguliere", date: today, heure: "06:00", fait: true, note: "" },
-  { id: 2, chantierId: 2, type: "Reguliere", date: today, heure: "08:00", fait: false, note: "" },
-  { id: 3, chantierId: 3, type: "Reguliere", date: today, heure: "07:00", fait: true, note: "" },
-  { id: 4, chantierId: 4, type: "Reguliere", date: today, heure: "05:30", fait: true, note: "" },
+  { id: 1, chantierId: 1, type: "Régulière", date: today, heure: "06:00", fait: true, note: "" },
+  { id: 2, chantierId: 2, type: "Régulière", date: today, heure: "08:00", fait: false, note: "" },
+  { id: 3, chantierId: 3, type: "Régulière", date: today, heure: "07:00", fait: true, note: "" },
+  { id: 4, chantierId: 4, type: "Régulière", date: today, heure: "05:30", fait: true, note: "" },
   { id: 5, chantierId: 1, type: "Ponctuelle", date: "2026-03-30", heure: "10:00", fait: false, note: "Remise en etat" },
 ];
 
-const sColor = (s) => ({"Present":"#10b981","Absent":"#ef4444","Conge":"#f59e0b","Maladie":"#8b5cf6"}[s]||"#6b7280");
-const sBg = (s) => ({"Present":"#d1fae5","Absent":"#fee2e2","Conge":"#fef3c7","Maladie":"#ede9fe"}[s]||"#f3f4f6");
+const sColor = (s) => ({"Présent":"#10b981","Absent":"#ef4444","Congé":"#f59e0b","Maladie":"#8b5cf6"}[s]||"#6b7280");
+const sBg = (s) => ({"Présent":"#d1fae5","Absent":"#fee2e2","Congé":"#fef3c7","Maladie":"#ede9fe"}[s]||"#f3f4f6");
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "--";
 const expSoon = (d,days=60) => { if(!d) return false; const diff=(new Date(d)-new Date())/(864e5); return diff>=0&&diff<=days; };
 const expired = (d) => d && new Date(d)<new Date();
@@ -123,9 +123,9 @@ function Login({ onLogin, users }) {
 
 function Dashboard({salaries,chantiers,presences,interventions,contrats,logements}) {
   const tp=presences.filter(p=>p.date===today);
-  const presents=tp.filter(p=>p.statut==="Present").length;
+  const presents=tp.filter(p=>p.statut==="Présent").length;
   const absents=tp.filter(p=>p.statut==="Absent").length;
-  const conges=tp.filter(p=>p.statut==="Conge"||p.statut==="Maladie").length;
+  const conges=tp.filter(p=>p.statut==="Congé"||p.statut==="Maladie").length;
   const iJ=interventions.filter(i=>i.date===today);
   const iNF=iJ.filter(i=>!i.fait);
   const cA=chantiers.filter(c=>c.actif).length;
@@ -145,7 +145,7 @@ function Dashboard({salaries,chantiers,presences,interventions,contrats,logement
   });
   if(iNF.length>0)alerts.push({type:"warning",msg:iNF.length+" intervention(s) non effectuee(s) aujourd'hui"});
   if(absents>0)alerts.push({type:"warning",msg:absents+" salarie(s) absent(s)"});
-  const sc=[{label:"Chantiers actifs",value:cA,icon:"🏗️",color:"#1a3c5e",bg:"#e8eef5"},{label:"Presents",value:presents,icon:"✅",color:"#10b981",bg:"#d1fae5"},{label:"Absents/Conges",value:absents+conges,icon:"🔴",color:"#ef4444",bg:"#fee2e2"},{label:"Interventions",value:iJ.length,icon:"🧹",color:"#f59e0b",bg:"#fef3c7"}];
+  const sc=[{label:"Chantiers actifs",value:cA,icon:"🏗️",color:"#1a3c5e",bg:"#e8eef5"},{label:"Présents",value:presents,icon:"✅",color:"#10b981",bg:"#d1fae5"},{label:"Absents/Congés",value:absents+conges,icon:"🔴",color:"#ef4444",bg:"#fee2e2"},{label:"Interventions",value:iJ.length,icon:"🧹",color:"#f59e0b",bg:"#fef3c7"}];
   return (
     <div>
       <h2 style={{margin:"0 0 24px",fontSize:24,color:"#1a3c5e"}}>Tableau de bord</h2>
@@ -186,10 +186,10 @@ function Presences({salaries,chantiers,presences,setPresences}) {
   const [search,setSearch]=useState("");
   const [filterCh,setFilterCh]=useState("Tous");
   const dp=presences.filter(p=>p.date===selDate);
-  const getSt=(id)=>{const p=dp.find(p=>p.salaryId===id);return p?.statut||"Present";};
+  const getSt=(id)=>{const p=dp.find(p=>p.salaryId===id);return p?.statut||"Présent";};
   const setSt=async(id,st)=>{setPresences(prev=>{const ex=prev.find(p=>p.salaryId===id&&p.date===selDate);if(ex)return prev.map(p=>p.salaryId===id&&p.date===selDate?{...p,statut:st}:p);return[...prev,{salaryId:id,date:selDate,statut:st}];});await supabase.from('presences').upsert({salaryId:id,date:selDate,statut:st});};
   const fil=salaries.filter(s=>{const m=(s.prenom+" "+s.nom).toLowerCase().includes(search.toLowerCase());const ch=chantiers.find(c=>c.id===s.chantierId);const mc=filterCh==="Tous"||ch?.client===filterCh;return m&&mc;});
-  const stats=["Present","Absent","Conge","Maladie"].map(s=>({label:s,count:fil.filter(sal=>getSt(sal.id)===s).length}));
+  const stats=["Présent","Absent","Congé","Maladie"].map(s=>({label:s,count:fil.filter(sal=>getSt(sal.id)===s).length}));
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -216,7 +216,7 @@ function Presences({salaries,chantiers,presences,setPresences}) {
                 <td style={{padding:"12px"}}><Badge color={s.contrat==="CDI"?"#1a3c5e":"#8b5cf6"} bg={s.contrat==="CDI"?"#e8eef5":"#ede9fe"}>{s.contrat}</Badge></td>
                 <td style={{padding:"12px",fontSize:13,color:"#6b7280"}}>{ch?.client||"--"}</td>
                 <td style={{padding:"12px"}}><Badge color={sColor(st)} bg={sBg(st)}>{st}</Badge></td>
-                <td style={{padding:"12px"}}><div style={{display:"flex",gap:6}}>{["Present","Absent","Conge","Maladie"].map(x=><button key={x} onClick={()=>setSt(s.id,x)} style={{padding:"4px 8px",borderRadius:6,border:"1.5px solid "+sColor(x),background:st===x?sColor(x):"transparent",color:st===x?"#fff":sColor(x),fontSize:10,fontWeight:700,cursor:"pointer"}}>{x}</button>)}</div></td>
+                <td style={{padding:"12px"}}><div style={{display:"flex",gap:6}}>{["Présent","Absent","Congé","Maladie"].map(x=><button key={x} onClick={()=>setSt(s.id,x)} style={{padding:"4px 8px",borderRadius:6,border:"1.5px solid "+sColor(x),background:st===x?sColor(x):"transparent",color:st===x?"#fff":sColor(x),fontSize:10,fontWeight:700,cursor:"pointer"}}>{x}</button>)}</div></td>
               </tr>
             );})}
           </tbody>
@@ -260,9 +260,9 @@ function Salaries({salaries,setSalaries,chantiers,logements}) {
                 </div>
                 <Badge color={s.contrat==="CDI"?"#1a3c5e":"#8b5cf6"} bg={s.contrat==="CDI"?"#e8eef5":"#ede9fe"}>{s.contrat}</Badge>
               </div>
-              {s.contrat==="CDD"&&s.finCDD&&<div style={{fontSize:12,marginBottom:4,color:cE?"#ef4444":cS?"#f59e0b":"#6b7280",fontWeight:cE||cS?700:400}}>📅 Fin CDD : {fmtDate(s.finCDD)} {cE?"⚠️ EXPIRE":cS?"⚠️ Bientot":""}</div>}
+              {s.contrat==="CDD"&&s.finCDD&&<div style={{fontSize:12,marginBottom:4,color:cE?"#ef4444":cS?"#f59e0b":"#6b7280",fontWeight:cE||cS?700:400}}>📅 Fin CDD : {fmtDate(s.finCDD)} {cE?"⚠️ EXPIRÉ":cS?"⚠️ Bientôt":""}</div>}
               <div style={{fontSize:12,color:"#6b7280",marginBottom:2}}>🪪 {s.typeCarte||"--"}</div>
-              {s.typeCarte==="Carte de séjour"&&s.finCarte&&<div style={{fontSize:12,marginBottom:4,color:kE?"#ef4444":kS?"#f59e0b":"#6b7280",fontWeight:kE||kS?700:400}}>Validite : {fmtDate(s.finCarte)} {kE?"⚠️ EXPIREE":kS?"⚠️ Bientot":"✅"}</div>}
+              {s.typeCarte==="Carte de séjour"&&s.finCarte&&<div style={{fontSize:12,marginBottom:4,color:kE?"#ef4444":kS?"#f59e0b":"#6b7280",fontWeight:kE||kS?700:400}}>Validite : {fmtDate(s.finCarte)} {kE?"⚠️ EXPIREE":kS?"⚠️ Bientôt":"✅"}</div>}
               <div style={{fontSize:12,color:"#6b7280",marginBottom:4}}>🏗️ {ch?.client||"Non affecte"}</div>
               <div style={{fontSize:12,color:"#6b7280",marginBottom:12}}>🏠 {lo?.adresse?.split(",")[0]||"--"}</div>
               <div style={{display:"flex",gap:8}}>
@@ -448,7 +448,7 @@ function Contrats({contrats,setContrats,chantiers}) {
           <Inp label="Debut" type="date" value={form.debut} onChange={v=>setForm({...form,debut:v})}/>
           <Inp label="Fin" type="date" value={form.fin} onChange={v=>setForm({...form,fin:v})}/>
           <Inp label="Montant mensuel" type="number" value={form.montant} onChange={v=>setForm({...form,montant:v})}/>
-          <Inp label="Statut" value={form.statut} onChange={v=>setForm({...form,statut:v})} options={["Actif","Expire","Suspendu"]}/>
+          <Inp label="Statut" value={form.statut} onChange={v=>setForm({...form,statut:v})} options={["Actif","Expiré","Suspendu"]}/>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
             <Btn variant="ghost" onClick={()=>setModal(null)}>Annuler</Btn>
             <Btn onClick={save}>Enregistrer</Btn>
@@ -461,9 +461,9 @@ function Contrats({contrats,setContrats,chantiers}) {
 
 function Interventions({interventions,setInterventions,chantiers}) {
   const [modal,setModal]=useState(null);
-  const [form,setForm]=useState({chantierId:1,type:"Reguliere",date:today,heure:"08:00",fait:false,note:""});
+  const [form,setForm]=useState({chantierId:1,type:"Régulière",date:today,heure:"08:00",fait:false,note:""});
   const [filter,setFilter]=useState("Toutes");
-  const openNew=()=>{setForm({chantierId:1,type:"Reguliere",date:today,heure:"08:00",fait:false,note:""});setModal("new");};
+  const openNew=()=>{setForm({chantierId:1,type:"Régulière",date:today,heure:"08:00",fait:false,note:""});setModal("new");};
   const save=async()=>{const r=modal==="new"?{...form,id:Date.now(),chantierId:Number(form.chantierId)}:{...form,id:modal,chantierId:Number(form.chantierId)};if(modal==="new")setInterventions(prev=>[...prev,r]);else setInterventions(prev=>prev.map(i=>i.id===modal?r:i));await supabase.from('interventions').upsert(r);setModal(null);};
   const toggle=async(id)=>{const iv=interventions.find(i=>i.id===id);setInterventions(prev=>prev.map(i=>i.id===id?{...i,fait:!i.fait}:i));await supabase.from('interventions').update({fait:!iv.fait}).eq('id',id);};
   const fil=interventions.filter(i=>filter==="Toutes"||i.type===filter);
@@ -474,7 +474,7 @@ function Interventions({interventions,setInterventions,chantiers}) {
         <Btn onClick={openNew}>+ Planifier</Btn>
       </div>
       <div style={{display:"flex",gap:10,marginBottom:20}}>
-        {["Toutes","Reguliere","Ponctuelle"].map(f=><Btn key={f} small variant={filter===f?"primary":"ghost"} onClick={()=>setFilter(f)}>{f}</Btn>)}
+        {["Toutes","Régulière","Ponctuelle"].map(f=><Btn key={f} small variant={filter===f?"primary":"ghost"} onClick={()=>setFilter(f)}>{f}</Btn>)}
       </div>
       <Card>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -483,10 +483,10 @@ function Interventions({interventions,setInterventions,chantiers}) {
             {fil.sort((a,b)=>b.date.localeCompare(a.date)).map(i=>{const ch=chantiers.find(c=>c.id===i.chantierId);return(
               <tr key={i.id} style={{borderBottom:"1px solid #f9fafb"}}>
                 <td style={{padding:"12px",fontWeight:600}}>{ch?.client||"--"}</td>
-                <td style={{padding:"12px"}}><Badge color={i.type==="Reguliere"?"#1a3c5e":"#8b5cf6"} bg={i.type==="Reguliere"?"#e8eef5":"#ede9fe"}>{i.type}</Badge></td>
+                <td style={{padding:"12px"}}><Badge color={i.type==="Régulière"?"#1a3c5e":"#8b5cf6"} bg={i.type==="Régulière"?"#e8eef5":"#ede9fe"}>{i.type}</Badge></td>
                 <td style={{padding:"12px",fontSize:13}}>{fmtDate(i.date)}</td>
                 <td style={{padding:"12px",fontSize:13}}>{i.heure}</td>
-                <td style={{padding:"12px"}}><Badge color={i.fait?"#10b981":"#f59e0b"} bg={i.fait?"#d1fae5":"#fef3c7"}>{i.fait?"Effectuee":"En attente"}</Badge></td>
+                <td style={{padding:"12px"}}><Badge color={i.fait?"#10b981":"#f59e0b"} bg={i.fait?"#d1fae5":"#fef3c7"}>{i.fait?"Effectuée":"En attente"}</Badge></td>
                 <td style={{padding:"12px",fontSize:12,color:"#6b7280"}}>{i.note||"--"}</td>
                 <td style={{padding:"12px"}}><Btn small variant={i.fait?"warning":"success"} onClick={()=>toggle(i.id)}>{i.fait?"Annuler":"Valider"}</Btn></td>
               </tr>
@@ -497,7 +497,7 @@ function Interventions({interventions,setInterventions,chantiers}) {
       {modal&&(
         <Modal title="Planifier" onClose={()=>setModal(null)}>
           <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#6b7280",marginBottom:4}}>Chantier</label><select value={form.chantierId} onChange={e=>setForm({...form,chantierId:e.target.value})} style={iS}>{chantiers.map(c=><option key={c.id} value={c.id}>{c.client}</option>)}</select></div>
-          <Inp label="Type" value={form.type} onChange={v=>setForm({...form,type:v})} options={["Reguliere","Ponctuelle"]}/>
+          <Inp label="Type" value={form.type} onChange={v=>setForm({...form,type:v})} options={["Régulière","Ponctuelle"]}/>
           <Inp label="Date" type="date" value={form.date} onChange={v=>setForm({...form,date:v})}/>
           <Inp label="Heure" type="time" value={form.heure} onChange={v=>setForm({...form,heure:v})}/>
           <Inp label="Note" value={form.note} onChange={v=>setForm({...form,note:v})}/>
@@ -513,7 +513,7 @@ function Interventions({interventions,setInterventions,chantiers}) {
 
 function Rapports({salaries,presences,chantiers}) {
   const [month,setMonth]=useState(new Date().toISOString().slice(0,7));
-  const getSt=(id)=>{const ps=presences.filter(p=>p.salaryId===id&&p.date.startsWith(month));return{present:ps.filter(p=>p.statut==="Present").length,absent:ps.filter(p=>p.statut==="Absent").length,conge:ps.filter(p=>p.statut==="Conge").length,maladie:ps.filter(p=>p.statut==="Maladie").length};};
+  const getSt=(id)=>{const ps=presences.filter(p=>p.salaryId===id&&p.date.startsWith(month));return{present:ps.filter(p=>p.statut==="Présent").length,absent:ps.filter(p=>p.statut==="Absent").length,conge:ps.filter(p=>p.statut==="Congé").length,maladie:ps.filter(p=>p.statut==="Maladie").length};};
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
@@ -636,7 +636,7 @@ export default function App() {
         if(ch.data?.length) setChantiers(ch.data); else await supabase.from('chantiers').insert(INITIAL_CHANTIERS);
         if(co.data?.length) setContrats(co.data); else await supabase.from('contrats').insert(INITIAL_CONTRATS);
         if(lo.data?.length) setLogements(lo.data); else await supabase.from('logements').insert(INITIAL_LOGEMENTS);
-        if(pr.data?.length) setPresences(pr.data); else await supabase.from('presences').insert(INITIAL_SALARIES.map(s=>({salaryId:s.id,date:today,statut:"Present"})));
+        if(pr.data?.length) setPresences(pr.data); else await supabase.from('presences').insert(INITIAL_SALARIES.map(s=>({salaryId:s.id,date:today,statut:"Présent"})));
         if(iv.data?.length) setInterventions(iv.data); else await supabase.from('interventions').insert(INITIAL_INTERVENTIONS);
         if(us.data?.length) setUsers(us.data); else await supabase.from('app_users').insert(USERS);
       } catch(e) { console.error('Supabase error:', e); }
