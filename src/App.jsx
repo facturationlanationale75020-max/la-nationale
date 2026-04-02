@@ -622,22 +622,24 @@ export default function App() {
   useEffect(()=>{
     const init=async()=>{
       setLoading(true);
-      const [s,ch,co,lo,pr,iv,us]=await Promise.all([
-        supabase.from('salaries').select('*'),
-        supabase.from('chantiers').select('*'),
-        supabase.from('contrats').select('*'),
-        supabase.from('logements').select('*'),
-        supabase.from('presences').select('*'),
-        supabase.from('interventions').select('*'),
-        supabase.from('app_users').select('*'),
-      ]);
-      if(s.data?.length) setSalaries(s.data); else await supabase.from('salaries').insert(INITIAL_SALARIES);
-      if(ch.data?.length) setChantiers(ch.data); else await supabase.from('chantiers').insert(INITIAL_CHANTIERS);
-      if(co.data?.length) setContrats(co.data); else await supabase.from('contrats').insert(INITIAL_CONTRATS);
-      if(lo.data?.length) setLogements(lo.data); else await supabase.from('logements').insert(INITIAL_LOGEMENTS);
-      if(pr.data?.length) setPresences(pr.data); else await supabase.from('presences').insert(INITIAL_SALARIES.map(s=>({salaryId:s.id,date:today,statut:"Present"})));
-      if(iv.data?.length) setInterventions(iv.data); else await supabase.from('interventions').insert(INITIAL_INTERVENTIONS);
-      if(us.data?.length) setUsers(us.data); else await supabase.from('app_users').insert(USERS);
+      try {
+        const [s,ch,co,lo,pr,iv,us]=await Promise.all([
+          supabase.from('salaries').select('*'),
+          supabase.from('chantiers').select('*'),
+          supabase.from('contrats').select('*'),
+          supabase.from('logements').select('*'),
+          supabase.from('presences').select('*'),
+          supabase.from('interventions').select('*'),
+          supabase.from('app_users').select('*'),
+        ]);
+        if(s.data?.length) setSalaries(s.data); else await supabase.from('salaries').insert(INITIAL_SALARIES);
+        if(ch.data?.length) setChantiers(ch.data); else await supabase.from('chantiers').insert(INITIAL_CHANTIERS);
+        if(co.data?.length) setContrats(co.data); else await supabase.from('contrats').insert(INITIAL_CONTRATS);
+        if(lo.data?.length) setLogements(lo.data); else await supabase.from('logements').insert(INITIAL_LOGEMENTS);
+        if(pr.data?.length) setPresences(pr.data); else await supabase.from('presences').insert(INITIAL_SALARIES.map(s=>({salaryId:s.id,date:today,statut:"Present"})));
+        if(iv.data?.length) setInterventions(iv.data); else await supabase.from('interventions').insert(INITIAL_INTERVENTIONS);
+        if(us.data?.length) setUsers(us.data); else await supabase.from('app_users').insert(USERS);
+      } catch(e) { console.error('Supabase error:', e); }
       setLoading(false);
     };
     init();
