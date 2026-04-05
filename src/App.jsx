@@ -514,31 +514,69 @@ function Interventions({interventions,setInterventions,chantiers}) {
 function Rapports({salaries,presences,chantiers}) {
   const [month,setMonth]=useState(new Date().toISOString().slice(0,7));
   const getSt=(id)=>{const ps=presences.filter(p=>p.salaryId===id&&p.date.startsWith(month));return{present:ps.filter(p=>p.statut==="Présent").length,absent:ps.filter(p=>p.statut==="Absent").length,conge:ps.filter(p=>p.statut==="Congé").length,maladie:ps.filter(p=>p.statut==="Maladie").length};};
+  const rows=salaries.map(s=>{const st=getSt(s.id);const ch=chantiers.find(c=>c.id===s.chantierId);const tot=st.present+st.absent+st.conge+st.maladie;return{nom:s.prenom+" "+s.nom,chantier:ch?.client||"--",...st,total:tot};});
+  const moisLabel=new Date(month+"-01").toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+
+  const exportCSV=()=>{
+    const header=["Salarié","Chantier","Présents","Absents","Congés","Maladie","Total"];
+    const lines=rows.map(r=>[r.nom,r.chantier,r.present,r.absent,r.conge,r.maladie,r.total].join(";"));
+    const csv="\uFEFF"+[header.join(";"),...lines].join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    a.download="rapport-presences-"+month+".csv";
+    a.click();
+  };
+
+  const exportPDF=()=>{
+    const win=window.open("","_blank");
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Rapport Présences – ${moisLabel}</title><style>
+      body{font-family:Arial,sans-serif;padding:32px;color:#1f2937}
+      h1{color:#1a3c5e;font-size:20px;margin-bottom:4px}
+      p{color:#6b7280;font-size:13px;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      th{background:#1a3c5e;color:#fff;padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase}
+      td{padding:10px 12px;border-bottom:1px solid #f3f4f6}
+      tr:nth-child(even){background:#f8fafc}
+      .total{font-weight:700}
+      @media print{body{padding:16px}}
+    </style></head><body>
+      <h1>La Nationale — Rapport des Présences</h1>
+      <p>Période : ${moisLabel} | Généré le ${new Date().toLocaleDateString("fr-FR")}</p>
+      <table>
+        <thead><tr><th>Salarié</th><th>Chantier</th><th>Présents</th><th>Absents</th><th>Congés</th><th>Maladie</th><th>Total</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td>${r.nom}</td><td>${r.chantier}</td><td>${r.present}</td><td>${r.absent}</td><td>${r.conge}</td><td>${r.maladie}</td><td class="total">${r.total}</td></tr>`).join("")}</tbody>
+      </table>
+    </body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(()=>{win.print();},300);
+  };
+
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
         <h2 style={{margin:0,fontSize:24,color:"#1a3c5e"}}>Rapports</h2>
         <div style={{display:"flex",gap:10}}>
           <input type="month" value={month} onChange={e=>setMonth(e.target.value)} style={{...iS,width:"auto"}}/>
-          <Btn small variant="success" onClick={()=>alert("Export Excel!")}>📊 Excel</Btn>
-          <Btn small variant="warning" onClick={()=>alert("Export PDF!")}>📄 PDF</Btn>
+          <Btn small variant="success" onClick={exportCSV}>📊 Excel (CSV)</Btn>
+          <Btn small variant="warning" onClick={exportPDF}>📄 PDF</Btn>
         </div>
       </div>
       <Card>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
-          <thead><tr style={{borderBottom:"2px solid #f3f4f6"}}>{["Salarie","Chantier","Presents","Absents","Conges","Maladie","Total"].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:"#9ca3af",textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
+          <thead><tr style={{borderBottom:"2px solid #f3f4f6"}}>{["Salarié","Chantier","Présents","Absents","Congés","Maladie","Total"].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:"#9ca3af",textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
           <tbody>
-            {salaries.map(s=>{const st=getSt(s.id);const ch=chantiers.find(c=>c.id===s.chantierId);const tot=st.present+st.absent+st.conge+st.maladie;return(
-              <tr key={s.id} style={{borderBottom:"1px solid #f9fafb"}}>
-                <td style={{padding:"12px",fontWeight:600}}>{s.prenom} {s.nom}</td>
-                <td style={{padding:"12px",fontSize:13,color:"#6b7280"}}>{ch?.client||"--"}</td>
-                <td style={{padding:"12px"}}><Badge color="#10b981" bg="#d1fae5">{st.present}</Badge></td>
-                <td style={{padding:"12px"}}><Badge color="#ef4444" bg="#fee2e2">{st.absent}</Badge></td>
-                <td style={{padding:"12px"}}><Badge color="#f59e0b" bg="#fef3c7">{st.conge}</Badge></td>
-                <td style={{padding:"12px"}}><Badge color="#8b5cf6" bg="#ede9fe">{st.maladie}</Badge></td>
-                <td style={{padding:"12px",fontWeight:700}}>{tot}</td>
+            {rows.map((r,i)=>(
+              <tr key={i} style={{borderBottom:"1px solid #f9fafb"}}>
+                <td style={{padding:"12px",fontWeight:600}}>{r.nom}</td>
+                <td style={{padding:"12px",fontSize:13,color:"#6b7280"}}>{r.chantier}</td>
+                <td style={{padding:"12px"}}><Badge color="#10b981" bg="#d1fae5">{r.present}</Badge></td>
+                <td style={{padding:"12px"}}><Badge color="#ef4444" bg="#fee2e2">{r.absent}</Badge></td>
+                <td style={{padding:"12px"}}><Badge color="#f59e0b" bg="#fef3c7">{r.conge}</Badge></td>
+                <td style={{padding:"12px"}}><Badge color="#8b5cf6" bg="#ede9fe">{r.maladie}</Badge></td>
+                <td style={{padding:"12px",fontWeight:700}}>{r.total}</td>
               </tr>
-            );})}
+            ))}
           </tbody>
         </table>
       </Card>
